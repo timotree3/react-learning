@@ -16,7 +16,7 @@ class Weeklydays extends React.Component {
     render() {
         const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
         return(
-            <tr>{for (day of days) {"<td>"+day+"</td>"}}</tr>
+            <tr>{days.map(days, (day => "<td>"+day+"</td>")).reduce((a, b)=>{a+b})}</tr>
         );
     }
 }
