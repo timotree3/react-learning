@@ -1,0 +1,56 @@
+Mawile-Mega @ Mawilite  
+Ability: Huge Power  
+EVs: 4 HP / 252 Atk / 252 Def  
+Relaxed Nature  
+- Ice Punch  
+- Play Rough  
+- Sucker Punch  
+- Flamethrower  
+
+Heatran @ Life Orb  
+Ability: Flash Fire  
+EVs: 252 HP / 252 SpA / 4 SpD  
+Quiet Nature  
+IVs: 0 Atk  
+- Flash Cannon  
+- Flamethrower  
+- Dark Pulse  
+- Eruption  
+
+Greninja-Ash (M) @ Choice Specs  
+Ability: Battle Bond  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Quiet Nature  
+- Ice Beam  
+- Surf  
+- Dark Pulse  
+- Extrasensory  
+
+Victini @ Life Orb  
+Ability: Victory Star  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Flamethrower  
+- Dazzling Gleam  
+- Hidden Power [Steel]  
+- Psychic  
+
+Landorus-Therian (M) @ Choice Band  
+Ability: Intimidate  
+EVs: 252 HP / 252 Atk / 4 SpD  
+Adamant Nature  
+- Fly  
+- Earthquake  
+- Outrage  
+- U-turn  
+
+Kyurem-Black @ Life Orb  
+Ability: Teravolt  
+EVs: 252 HP / 252 Atk / 4 SpA  
+Naughty Nature  
+- Dragon Claw  
+- Earth Power  
+- Flash Cannon  
+- Iron Head  
+

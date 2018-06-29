@@ -1,0 +1,52 @@
+Landorus-Therian  
+Ability: Intimidate  
+EVs: 252 HP / 252 Atk / 4 SpD  
+Adamant Nature  
+- Outrage  
+- Fly  
+- Stealth Rock  
+- U-turn  
+
+Greninja-Ash @ Choice Specs  
+Ability: Battle Bond  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Quiet Nature  
+- Ice Beam  
+- Dark Pulse  
+- Extrasensory  
+- U-turn  
+
+Kyurem-Black @ Power Herb  
+Ability: Teravolt  
+- Freeze Shock  
+- Dragon Claw  
+- Zen Headbutt  
+- Shadow Claw  
+
+Kartana @ Life Orb  
+Ability: Beast Boost  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Jolly Nature  
+- Night Slash  
+- Psycho Cut  
+- Knock Off  
+- Protect  
+
+Venusaur-Mega @ Venusaurite  
+Ability: Thick Fat  
+EVs: 252 HP / 4 Def / 252 SpA  
+Quiet Nature  
+- Giga Drain  
+- Outrage  
+- Frenzy Plant  
+- Rest  
+
+Magearna @ Choice Band  
+Ability: Soul-Heart  
+EVs: 252 HP / 252 Atk / 4 SpA  
+Brave Nature  
+- Iron Head  
+- Fleur Cannon  
+- Ice Beam  
+- Shadow Ball  
+

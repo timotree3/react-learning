@@ -1,0 +1,36 @@
+Mawile-Mega @ Mawilite  
+Ability: Huge Power  
+EVs: 4 HP / 252 Atk / 252 Def  
+Relaxed Nature  
+- Ice Punch  
+- Iron Head  
+- Sucker Punch  
+- Flamethrower  
+
+Greninja-Ash @ Life Orb  
+Ability: Battle Bond  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Quiet Nature  
+- Ice Beam  
+- Dark Pulse  
+- Extrasensory  
+- U-turn  
+
+Landorus-Therian @ Choice Band  
+Ability: Intimidate  
+EVs: 252 HP / 252 Atk / 4 SpD  
+Adamant Nature  
+- Psychic  
+- Earthquake  
+- Outrage  
+- U-turn  
+
+Kartana @ Choice Band  
+Ability: Beast Boost  
+EVs: 252 Atk / 4 SpA / 252 Spe  
+Naive Nature  
+- X-Scissor  
+- Air Slash  
+- Night Slash  
+- Rest  
+
