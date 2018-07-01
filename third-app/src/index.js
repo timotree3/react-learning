@@ -107,15 +107,11 @@ class Tree {
     addChild(newChild) {
         console.log("adding child");
         console.log(newChild);
-        let nextChildren = [];
-        for (let i = 0; i < newChild.startIndex; i++) {
-            nextChildren.push(this.children[i]);
-        }
-        nextChildren.push(new Token("node", newChild));
-        for (let i = newChild.endIndex+1; i < this.children.length; i++) {
-            nextChildren.push(this.children[i]);
-        }
-        this.children = nextChildren;
+        this.children = [
+            ...this.children.slice(0, newChild.startIndex),
+            new Token("node", newChild),
+            ...this.children.slice(newChild.endIndex + 1, this.children.length),
+        ];
     }
 
     parse() {
@@ -193,8 +189,7 @@ class Paren extends Tree {
             this.error = "NO CLOSE PARENTHESES";
             return;
         }
-        this.children.splice(this.endIndex, this.children.length-this.endIndex);
-        this.children.splice(0, this.startIndex+1);
+        this.children = this.children.slice(this.startIndex+1, this.endIndex);
     }
 
     static markedBy(token) {
@@ -240,19 +235,16 @@ class Mul extends Tree {
         }
         this.startIndex = starLocation-1;
         this.endIndex = starLocation+1;
-        this.children.splice(0, this.startIndex);
-        this.children.splice(1, 1);
-        this.children.splice(2, this.children.length-2);
-        if (this.children.length < 2) {
-          this.error = "NOT ENOUGH OPERANDS";
-          return;
-        }
-        if (this.children[0].type === "marker") {
-            this.error = "FIRST OPERAND IS AN MARKER";
+        this.children = [
+            this.children[this.startIndex],
+            this.children[this.endIndex]
+        ];
+        if (this.children[0] === undefined || this.children[0].type === "marker") {
+            this.error = "INVALID FIRST OPERAND";
             return;
         }
-        if (this.children[1].type === "marker") {
-            this.error = "SECOND OPERAND IS AN MARKER";
+        if (this.children[1] === undefined || this.children[1].type === "marker") {
+            this.error = "INVALID SECOND OPERAND";
             return;
         }
     }
@@ -295,21 +287,18 @@ class Quo extends Tree {
         if (Quo.markedBy(!this.children[slashLocation])) {
             console.error("ERROR slashLocation isn't even slash");
         }
-        this.slashtIndex = slashLocation-1;
+        this.startIndex = slashLocation-1;
         this.endIndex = slashLocation+1;
-        this.children.splice(0, this.startIndex);
-        this.children.splice(1, 1);
-        this.children.splice(2, this.children.length-2);
-        if (this.children.length < 2) {
-          this.error = "NOT ENOUGH OPERANDS";
-          return;
-        }
-        if (this.children[0].type === "marker") {
-            this.error = "FIRST OPERAND IS AN MARKER";
+        this.children = [
+            this.children[this.startIndex],
+            this.children[this.endIndex]
+        ];
+        if (this.children[0] === undefined || this.children[0].type === "marker") {
+            this.error = "INVALID FIRST OPERAND";
             return;
         }
-        if (this.children[1].type === "marker") {
-            this.error = "SECOND OPERAND IS AN MARKER";
+        if (this.children[1] === undefined || this.children[1].type === "marker") {
+            this.error = "INVALID SECOND OPERAND";
             return;
         }
     }
@@ -354,19 +343,16 @@ class Add extends Tree {
         }
         this.startIndex = plusLocation-1;
         this.endIndex = plusLocation+1;
-        this.children.splice(0, this.startIndex);
-        this.children.splice(1, 1);
-        this.children.splice(2, this.children.length-2);
-        if (this.children.length < 2) {
-          this.error = "NOT ENOUGH OPERANDS";
-          return;
-        }
-        if (this.children[0].type === "marker") {
-            this.error = "FIRST OPERAND IS AN MARKER";
+        this.children = [
+            this.children[this.startIndex],
+            this.children[this.endIndex]
+        ];
+        if (this.children[0] === undefined || this.children[0].type === "marker") {
+            this.error = "INVALID FIRST OPERAND";
             return;
         }
-        if (this.children[1].type === "marker") {
-            this.error = "SECOND OPERAND IS AN MARKER";
+        if (this.children[1] === undefined || this.children[1].type === "marker") {
+            this.error = "INVALID SECOND OPERAND";
             return;
         }
     }
