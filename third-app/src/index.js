@@ -36,22 +36,8 @@ class Calculator extends React.Component {
             console.error(error);
             return "error! see developer console for more info.";
         }
-        let mismatched_bracket_location = tree.findParen();
-        if (mismatched_bracket_location !== null) {
-            return `error: MISMATCHED PARENTHESES`;
-        }
-        if (tree.error !== null) {
-            return `error: ${tree.error}`;
-        }
-        tree.findMuls();
-        if (tree.error !== null) {
-            return `error: ${tree.error}`;
-        }
-        tree.findQuos();
-        if (tree.error !== null) {
-            return `error: ${tree.error}`;
-        }
-        tree.findAdds();
+
+        tree.parse();
         if (tree.error !== null) {
             return `error: ${tree.error}`;
         }
@@ -64,12 +50,6 @@ class Calculator extends React.Component {
         return val;
     }
 }
-
-// const order = [
-//     [Paren, CloseParen],
-//     [Mul, Quo],
-//     [Add]
-// ];
 
 const tokenize = function(text) {
     let tokens = [];
@@ -122,7 +102,6 @@ class Tree {
         this.startIndex = 0;
         this.endIndex = this.children.length-1;
         this.type = "TREE";
-        this.shrunkBy = 0;
     }
 
     addChild(newChild) {
@@ -139,104 +118,35 @@ class Tree {
         this.children = nextChildren;
     }
 
-    // parse() {
-    //     for (let tier of order) {
-    //         for (let i = 0; i < this.children.length; i++) {
-    //
-    //             for (let type of tier) {
-    //                 if (type.markedBy(this.children[i])) {
-    //                     let newChild = new (type)(this.children.slice(), i);
-    //                     this.addChild(newChild);
-    //                     this.shrunkBy += newChild.endIndex - newChild.startIndex;
-    //                     if (newChild.error !== null) {
-    //                         this.error = `error while in type ${type}: ${newChild.error}`;
-    //                         return null;
-    //                     }
-    //                     i = newChild.startIndex;
-    //                 }
-    //             }
-    //             if (this.children[i].type === "node") {
-    //                 this.children[i].content.parse();
-    //             }
-    //         }
-    //     }
-    // }
+    parse() {
+        const order = [
+            [Paren, CloseParen],
+            [Mul, Quo],
+            [Add]
+        ];
+        for (let tier of order) {
+            console.log("starting next tier");
+            for (let i = 0; i < this.children.length; i++) {
 
-    // returns unexpected close parentheses if found
-    findParen() {
-        console.log(this.children.slice());
-        for (let i = 0; i < this.children.length; i++) {
-            if (this.children[i].isOpenParen()) {
-                let parens = new Parens(this.children.slice(), i);
-                this.addChild(parens);
-                this.shrunkBy += parens.endIndex - parens.startIndex;
-                if (parens.error !== null) {
-                    this.error = `parens error: ${parens.error}`;
-                    return null;
+                for (let type of tier) {
+                    console.log(`starting type ${type.name}`);
+                    if (type.markedBy(this.children[i])) {
+                        let newChild = new (type)(this.children.slice(), i);
+                        this.addChild(newChild);
+                        if (newChild.error !== null) {
+                            this.error = `error while in type ${type.name}: ${newChild.error}`;
+                            return;
+                        }
+                        i = newChild.startIndex;
+                    }
                 }
-                i = parens.startIndex;
-            } else if (this.children[i].isCloseParen()) {
-                return i;
-            }
-            if (this.children[i].type === "node") {
-                this.children[i].content.findParen();
-            }
-        }
-
-        return null;
-
-    }
-
-    findMuls() {
-        for (let i = 0; i < this.children.length; i++) {
-            if (this.children[i].isStar()) {
-                let mul = new Mul(this.children.slice(), i);
-                this.addChild(mul);
-                this.shrunkBy += mul.endIndex - mul.startIndex;
-                if (mul.error !== null) {
-                    this.error = `mul error: ${mul.error}`;
-                    return;
+                if (this.children[i].type === "node") {
+                    this.children[i].content.parse();
+                    if (this.children[i].content.error !== null) {
+                        this.error = `error in parsing child: ${this.children[i].content.error}`;
+                        return;
+                    }
                 }
-                i = mul.startIndex;
-            }
-            if (this.children[i].type === "node") {
-                this.children[i].content.findMuls();
-            }
-        }
-    }
-
-    findQuos() {
-        for (let i = 0; i < this.children.length; i++) {
-            if (this.children[i].isSlash()) {
-                let quo = new Quo(this.children.slice(), i);
-                this.addChild(quo);
-                this.shrunkBy += quo.endIndex - quo.startIndex;
-                if (quo.error !== null) {
-                    this.error = `quo error: ${quo.error}`;
-                    return;
-                }
-                i = quo.startIndex;
-            }
-            if (this.children[i].type === "node") {
-                this.children[i].content.findQuos();
-            }
-        }
-    }
-
-    findAdds() {
-        for (let i = 0; i < this.children.length; i++) {
-            if (this.children[i].isPlus()) {
-                let add = new Add(this.children.slice(), i);
-                this.addChild(add);
-                this.shrunkBy += add.endIndex - add.startIndex;
-                if (add.error !== null) {
-                    this.error = `add error: ${add.error}`;
-                    return;
-                }
-                i = add.startIndex;
-            }
-            if (this.children[i].type === "node") {
-                this.children[i].content.findAdds();
             }
         }
     }
@@ -268,30 +178,54 @@ class Tree {
     }
 }
 
-class Parens extends Tree {
+class Paren extends Tree {
     constructor(tokens, index) {
         super(tokens);
-        this.type = "PARENS";
-        if (!this.children[index].isOpenParen()) {
-            console.error("ERROR index isn't even parens");
+        this.type = "PAREN";
+        if (Paren.markedBy(!this.children[index])) {
+            console.error("ERROR index isn't even paren");
         }
         // exclude all that comes before the open paren
         this.startIndex = index;
-        this.children.splice(0, this.startIndex+1);
-        this.shrunkBy += this.startIndex+1;
 
-        let closeParenLocation = this.findParen();
-        this.endIndex = this.shrunkBy+closeParenLocation;
-
-        if (closeParenLocation === null) {
+        this.endIndex = this.findMatching();
+        if (this.endIndex === null) {
             this.error = "NO CLOSE PARENTHESES";
             return;
         }
-        this.children.splice(closeParenLocation, this.children.length-closeParenLocation);
+        this.children.splice(this.endIndex, this.children.length-this.endIndex);
+        this.children.splice(0, this.startIndex+1);
     }
 
     static markedBy(token) {
         return token.type === "marker" && token.content === "(";
+    }
+
+    findMatching() {
+        let starts = 0;
+        for (let i = this.startIndex; i < this.children.length; i++) {
+            if (Paren.markedBy(this.children[i])) {
+                starts += 1;
+            } else if (CloseParen.markedBy(this.children[i])) {
+                starts -= 1;
+            }
+            if (starts === 0) {
+                return i;
+            }
+        }
+        return null;
+    }
+
+}
+
+class CloseParen {
+    constructor(tokens, index) {
+        this.error = "MISMATCHED PARENTHESES";
+        return;
+    }
+
+    static markedBy(token) {
+        return token.type === "marker" && token.content === ")";
     }
 }
 
@@ -301,7 +235,7 @@ class Mul extends Tree {
         console.log(this.children.slice());
         console.log(starLocation);
         this.type = "MUL";
-        if (!this.children[starLocation].isStar()) {
+        if (Mul.markedBy(!this.children[starLocation])) {
             console.error("ERROR starLocation isn't even star");
         }
         this.startIndex = starLocation-1;
@@ -324,7 +258,7 @@ class Mul extends Tree {
     }
 
     static markedBy(token) {
-        return this.type === "marker" && this.content === "*";
+        return token.type === "marker" && token.content === "*";
     }
 
     value() {
@@ -358,7 +292,7 @@ class Quo extends Tree {
         console.log(this.children.slice());
         console.log(slashLocation);
         this.type = "QUO";
-        if (!this.children[slashLocation].isSlash()) {
+        if (Quo.markedBy(!this.children[slashLocation])) {
             console.error("ERROR slashLocation isn't even slash");
         }
         this.slashtIndex = slashLocation-1;
@@ -415,7 +349,7 @@ class Add extends Tree {
         console.log(this.children.slice());
         console.log(plusLocation);
         this.type = "ADD";
-        if (!this.children[plusLocation].isPlus()) {
+        if (Add.markedBy(!this.children[plusLocation])) {
             console.error("ERROR plusLocation isn't even plus");
         }
         this.startIndex = plusLocation-1;
