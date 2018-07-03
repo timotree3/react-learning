@@ -99,8 +99,8 @@ class Tree {
     constructor(tokens) {
         this.error = null;
         this.children = tokens;
-        this.startIndex = 0;
-        this.endIndex = this.children.length-1;
+        this.start = 0;
+        this.end = this.children.length-1;
         this.type = "TREE";
     }
 
@@ -108,9 +108,9 @@ class Tree {
         console.log("adding child");
         console.log(newChild);
         this.children = [
-            ...this.children.slice(0, newChild.startIndex),
+            ...this.children.slice(0, newChild.start),
             new Token("node", newChild),
-            ...this.children.slice(newChild.endIndex + 1, this.children.length),
+            ...this.children.slice(newChild.end + 1, this.children.length),
         ];
     }
 
@@ -118,14 +118,15 @@ class Tree {
         const order = [
             [Paren, CloseParen],
             [Mul, Quo],
-            [Add]
+            [Add, Sub]
         ];
+
         for (let tier of order) {
             console.log("starting next tier");
             for (let i = 0; i < this.children.length; i++) {
-
+                console.log(`i: ${i}`)
                 for (let type of tier) {
-                    console.log(`starting type ${type.name}`);
+                    console.log(`starting type ${type.name} at index ${i}`);
                     if (type.markedBy(this.children[i])) {
                         let newChild = new (type)(this.children.slice(), i);
                         this.addChild(newChild);
@@ -133,7 +134,7 @@ class Tree {
                             this.error = `error while in type ${type.name}: ${newChild.error}`;
                             return;
                         }
-                        i = newChild.startIndex;
+                        i = newChild.start;
                     }
                 }
                 if (this.children[i].type === "node") {
@@ -156,19 +157,19 @@ class Tree {
     value() {
         if (this.children.length !== 1) {
             this.error = "wrong number of elements in group";
-            return "ERROR";
+            return;
         }
         if (this.children[0].type === "marker") {
             this.error = "main element is operator";
-            return "ERROR";
+            return;
         }
         if (this.children[0].type === "value") {
             return this.children[0].content;
         }
         let val = this.children[0].content.value();
-        if (val === "ERROR") {
+        if (this.children[0].content.error !== null) {
           this.error = `error evaluating child: ${this.children[0].content.error}`;
-          return "ERROR";
+          return;
         }
         return val;
     }
@@ -182,14 +183,14 @@ class Paren extends Tree {
             console.error("ERROR index isn't even paren");
         }
         // exclude all that comes before the open paren
-        this.startIndex = index;
+        this.start = index;
 
-        this.endIndex = this.findMatching();
-        if (this.endIndex === null) {
+        this.end = this.findMatching();
+        if (this.end === null) {
             this.error = "NO CLOSE PARENTHESES";
             return;
         }
-        this.children = this.children.slice(this.startIndex+1, this.endIndex);
+        this.children = this.children.slice(this.start+1, this.end);
     }
 
     static markedBy(token) {
@@ -198,7 +199,7 @@ class Paren extends Tree {
 
     findMatching() {
         let starts = 0;
-        for (let i = this.startIndex; i < this.children.length; i++) {
+        for (let i = this.start; i < this.children.length; i++) {
             if (Paren.markedBy(this.children[i])) {
                 starts += 1;
             } else if (CloseParen.markedBy(this.children[i])) {
@@ -224,167 +225,85 @@ class CloseParen {
     }
 }
 
-class Mul extends Tree {
-    constructor(tokens, starLocation) {
-        super(tokens);
-        console.log(this.children.slice());
-        console.log(starLocation);
-        this.type = "MUL";
-        if (Mul.markedBy(!this.children[starLocation])) {
-            console.error("ERROR starLocation isn't even star");
+const binaryOperator = (type, markedBy, evaluate) => {
+    return class extends Tree {
+        constructor(tokens, markerLocation) {
+            super(tokens);
+            console.log(this.children.slice());
+            console.log(markerLocation);
+            this.type = type;
+            if (markedBy(!this.children[markerLocation])) {
+                console.error("ERROR markerLocation isn't even marker");
+            }
+            this.start = markerLocation-1;
+            this.end = markerLocation+1;
+            this.children = [
+                this.children[this.start],
+                this.children[this.end]
+            ];
+            if (this.children[0] === undefined || this.children[0].type === "marker") {
+                this.error = "INVALID FIRST OPERAND";
+                return;
+            }
+            if (this.children[1] === undefined || this.children[1].type === "marker") {
+                this.error = "INVALID SECOND OPERAND";
+                return;
+            }
         }
-        this.startIndex = starLocation-1;
-        this.endIndex = starLocation+1;
-        this.children = [
-            this.children[this.startIndex],
-            this.children[this.endIndex]
-        ];
-        if (this.children[0] === undefined || this.children[0].type === "marker") {
-            this.error = "INVALID FIRST OPERAND";
-            return;
-        }
-        if (this.children[1] === undefined || this.children[1].type === "marker") {
-            this.error = "INVALID SECOND OPERAND";
-            return;
-        }
-    }
 
-    static markedBy(token) {
-        return token.type === "marker" && token.content === "*";
-    }
+        static markedBy(token) {
+            return markedBy(token);
+        }
 
-    value() {
-        let val0;
-        if (this.children[0].type === "value") {
-            val0 = this.children[0].content;
-        } else {
-            val0 = this.children[0].content.value();
+        value() {
+            let val0;
+            if (this.children[0].type === "value") {
+                val0 = this.children[0].content;
+            } else {
+                val0 = this.children[0].content.value();
+                if (this.children[0].content.error !== null) {
+                    this.error = `error evaluating first child: ${this.children[0].content.error}`;
+                    return;
+                }
+            }
+            let val1;
+            if (this.children[1].type === "value") {
+                val1 = this.children[1].content;
+            } else {
+                val1 = this.children[1].content.value();
+                if (this.children[1].content.error !== null) {
+                    this.error = `error evaluating second child: ${this.children[1].content.error}`;
+                    return;
+                }
+            }
+            return evaluate(val0, val1);
         }
-        if (val0 === "ERROR") {
-          this.error = `error evaluating first child: ${this.children[0].content.error}`;
-          return "ERROR";
-        }
-        let val1;
-        if (this.children[1].type === "value") {
-            val1 = this.children[1].content;
-        } else {
-            val1 = this.children[1].content.value();
-        }
-        if (val1 === "ERROR") {
-          this.error = `error evaluating first child: ${this.children[1].content.error}`;
-          return "ERROR";
-        }
-        return val0 * val1;
     }
 }
 
-class Quo extends Tree {
-    constructor(tokens, slashLocation) {
-        super(tokens);
-        console.log(this.children.slice());
-        console.log(slashLocation);
-        this.type = "QUO";
-        if (Quo.markedBy(!this.children[slashLocation])) {
-            console.error("ERROR slashLocation isn't even slash");
-        }
-        this.startIndex = slashLocation-1;
-        this.endIndex = slashLocation+1;
-        this.children = [
-            this.children[this.startIndex],
-            this.children[this.endIndex]
-        ];
-        if (this.children[0] === undefined || this.children[0].type === "marker") {
-            this.error = "INVALID FIRST OPERAND";
-            return;
-        }
-        if (this.children[1] === undefined || this.children[1].type === "marker") {
-            this.error = "INVALID SECOND OPERAND";
-            return;
-        }
-    }
+const Mul = binaryOperator(
+    "MUL",
+    (token) => token.type === "marker" && token.content === "*",
+    (lhs, rhs) => lhs * rhs
+);
 
-    static markedBy(token) {
-        return token.type === "marker" && token.content === "/";
-    }
+const Quo = binaryOperator(
+    "QUO",
+    (token) => token.type === "marker" && token.content === "/",
+    (lhs, rhs) => lhs / rhs
+);
 
-    value() {
-        let val0;
-        if (this.children[0].type === "value") {
-            val0 = this.children[0].content;
-        } else {
-            val0 = this.children[0].content.value();
-        }
-        if (val0 === "ERROR") {
-          this.error = `error evaluating first child: ${this.children[0].content.error}`;
-          return "ERROR";
-        }
-        let val1;
-        if (this.children[1].type === "value") {
-            val1 = this.children[1].content;
-        } else {
-            val1 = this.children[1].content.value();
-        }
-        if (val1 === "ERROR") {
-          this.error = `error evaluating first child: ${this.children[1].content.error}`;
-          return "ERROR";
-        }
-        return val0 / val1;
-    }
-}
+const Add = binaryOperator(
+    "ADD",
+    (token) => token.type === "marker" && token.content === "+",
+    (lhs, rhs) => lhs + rhs
+);
 
-class Add extends Tree {
-    constructor(tokens, plusLocation) {
-        super(tokens);
-        console.log(this.children.slice());
-        console.log(plusLocation);
-        this.type = "ADD";
-        if (Add.markedBy(!this.children[plusLocation])) {
-            console.error("ERROR plusLocation isn't even plus");
-        }
-        this.startIndex = plusLocation-1;
-        this.endIndex = plusLocation+1;
-        this.children = [
-            this.children[this.startIndex],
-            this.children[this.endIndex]
-        ];
-        if (this.children[0] === undefined || this.children[0].type === "marker") {
-            this.error = "INVALID FIRST OPERAND";
-            return;
-        }
-        if (this.children[1] === undefined || this.children[1].type === "marker") {
-            this.error = "INVALID SECOND OPERAND";
-            return;
-        }
-    }
-
-    static markedBy(token) {
-        return token.type === "marker" && token.content === "+";
-    }
-
-    value() {
-        let val0;
-        if (this.children[0].type === "value") {
-            val0 = this.children[0].content;
-        } else {
-            val0 = this.children[0].content.value();
-        }
-        if (val0 === "ERROR") {
-          this.error = `error evaluating first child: ${this.children[0].content.error}`;
-          return "ERROR";
-        }
-        let val1;
-        if (this.children[1].type === "value") {
-            val1 = this.children[1].content;
-        } else {
-            val1 = this.children[1].content.value();
-        }
-        if (val1 === "ERROR") {
-          this.error = `error evaluating first child: ${this.children[1].content.error}`;
-          return "ERROR";
-        }
-        return val0 + val1;
-    }
-}
+const Sub = binaryOperator(
+    "SUB",
+    (token) => token.type === "marker" && token.content === "-",
+    (lhs, rhs) => lhs - rhs
+);
 
 ReactDOM.render(
     <Calculator/>

@@ -1,233 +1,193 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-class Calculator extends React.Component {
+class App extends React.Component {
     constructor(props) {
         super(props);
+        this.indicator = React.createRef();
+        let newX = random(100);
+        let newY = random(100);
         this.state = {
-            "answer": "Please enter an expression."
+            "initiateBlink": true,
+            "mouseDistance": Infinity,
+            "crabsFound": 0,
+            "crabLocation": new SubPosition(newX, newY)
         }
+        document.addEventListener("mousemove", (e) => {
+            let xPercent = 100*e.pageX/window.innerWidth;
+            let yPercent = 100*e.pageY/window.innerHeight;
+            // console.log(`Mouse moved! x: ${xPercent} y: ${yPercent}`);
+            this.setState({
+                ...this.state,
+                "mouseDistance": this.state.crabLocation.distance(new SubPosition(xPercent, yPercent))
+            });
+            if (this.state.initiateBlink) {
+                this.setState({
+                    ...this.state,
+                    "initiateBlink": false
+                });
+                this.indicator.current.blink();
+            }
+        });
     }
 
     render() {
+
+
         return (
             <div>
-                <input onChange={(e) => this.processChange(e)} type="text"/>
-                <h1>{this.state.answer}</h1>
+                <h1>{this.state.crabsFound} cat{(this.state.crabsFound === 1)?"":"s"} found</h1>
+                <ProximityIndicator proximity={this.state.mouseDistance} ref={this.indicator}/>
+                <Rustacean moveMe={(e) => this.newCrab()} height={60} position={this.state.crabLocation}/>
             </div>
         );
     }
 
-    processChange(event) {
-        console.clear();
+    newCrab() {
+        console.log("NEW CRAB!!!!");
+        let newX = random(100);
+        let newY = random(100);
+        this.indicator.current.stopBlinking();
         this.setState({
             ...this.state,
-            "answer": "..."
+            "initiateBlink": true,
+            "crabsFound": this.state.crabsFound+1,
+            "crabLocation": new SubPosition(newX, newY)
         });
+    }
+}
+
+const random = function(max) {
+    return Math.random()*max;
+}
+
+class SubPosition {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    distance(other) {
+        let vw = window.innerWidth;
+        let vh = window.innerHeight;
+        let distanceX = this.normalizedX(vw, vh) - other.normalizedX(vw, vh);
+        let distanceY = this.y - other.y;
+        return Math.sqrt((distanceX * distanceX) + (distanceY * distanceY));
+    }
+
+    normalizedX(parentWidth, parentHeight) {
+        return this.x * parentHeight/parentWidth;
+    }
+}
+
+class Rustacean extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            "display": false
+        }
+    }
+
+    render() {
+        let height = this.props.height;
+        let width = this.props.height * 1.5;
+        return (
+            <div onClick={(e) => this.show()} style={{
+                "position":"absolute",
+                "left": `${this.props.position.x}vw`,
+                "top": `${this.props.position.y}vh`, 
+                "marginLeft": `${-(width/2)}px`,
+                "marginTop": `${-(height/2)}px`,
+                "cursor": "pointer",
+                "opacity": this.state.display?1:0
+            }}>
+                <img src="/cat.jpg" alt="rustacean" style={{"height": `${height}px`, "width": `${width}px`}}/>
+            </div>
+        );
+    }
+
+    show() {
+        if (this.display) {
+            return;
+        }
         this.setState({
             ...this.state,
-            "answer": this.calculate(event.target.value)
+            display: true
+        });
+        setTimeout(
+            () => {
+                this.props.moveMe();
+                this.setState({
+                    ...this.state,
+                    "display": false
+                })
+            }, 1500
+        );
+    }
+}
+
+class ProximityIndicator extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            "timer": null,
+            "display": false,
+            "color": "grey"
+        };
+    }
+
+    stopBlinking() {
+        clearTimeout(this.state.timer);
+    }
+
+    blink() {
+        this.stopBlinking();
+        console.log("blink");
+        let color = "grey";
+        let delayScale = 50;
+        let proximity = this.props.proximity;
+        if (proximity <= 30) {
+            color = "yellow";
+            delayScale = 30;
+        }
+        if (proximity <= 15) {
+            color = "orange";
+            delayScale = 15;
+        }
+        if (proximity <= 5) {
+            color = "red";
+            delayScale = 5;
+        }
+        let timer = setTimeout(
+            () => {
+                let timer = setTimeout(
+                    () => {
+                        this.blink();
+                    }, 70
+                );
+                this.setState({
+                    ...this.state,
+                    "timer": timer,
+                    "display": false
+                });
+
+            }, (delayScale*35)-70
+        );
+        this.setState({
+            ...this.state,
+            "timer": timer,
+            "display": true,
+            "color": color
         });
     }
 
-    calculate(text) {
-        let {tree, error} = tokenize(text);
-        if (error !== null) {
-            console.error(error);
-            return "error! see developer console for more info.";
-        }
-        let mismatched_bracket_location = tree.findParen();
-        if (mismatched_bracket_location !== null) {
-            console.error("MISMATCHED PARENS");
-        }
-        if (tree.error !== null) {
-            console.error(`tree error: ${tree.error}`);
-        }
-        tree.findAdds();
-        if (tree.error !== null) {
-            console.error(`tree error: ${tree.error}`);
-        }
-        console.log(tree);
-        return tree.toString();
-    }
-}
-
-const tokenize = function(text) {
-    let tokens = [];
-    let char;
-    let digitSequence = 0;
-    for (let i = 0; i < text.length; i++) {
-        char = text.charAt(i);
-        if (/\s/.test(char)) {
-            continue;
-        }
-        if (/\d/.test(char)) {
-            digitSequence *= 10;
-            digitSequence += Number(char);
-            continue;
-        }
-        if (digitSequence !== 0) {
-            tokens.push(new Token("node", digitSequence, tokens.length));
-            digitSequence = 0;
-        }
-        if (/[()*/+-]/.test(char)) {
-            tokens.push(new Token("operator", char, tokens.length));
-            continue;
-        }
-        return {"tree": null, "error": `unexpected character: '${char}' at index ${i}`};
-    }
-    if (digitSequence !== 0) {
-        tokens.push(new Token("node", digitSequence, tokens.length));
-    }
-    return {"tree": new Tree(tokens), "error": null};
-}
-
-class Token {
-    constructor(type, content, index) {
-        if (type !== "node" && type !== "operator") {
-            console.error("TOKEN MADE WITH INVALID TYPE");
-            this.type = "ERROR ERROR";
-            this.content = "ERROR ERROR";
-            return;
-        }
-        this.type = type;
-        this.content = content;
-        this.index = index;
-    }
-
-    isOpenParen() {
-        return this.type === "operator" && this.content === "(";
-    }
-
-    isCloseParen() {
-        return this.type === "operator" && this.content === ")";
-    }
-
-    isPlus() {
-        return this.type === "operator" && this.content === "+";
-    }
-}
-
-class Tree {
-    constructor(tokens) {
-        this.error = null;
-        this.children = tokens;
-        this.startIndex = 0;
-        this.endIndex = this.children.length-1;
-        this.type = "TREE";
-        this.shrunkBy = 0;
-    }
-
-    addChild(newChild) {
-        console.log("adding child");
-        console.log(newChild);
-        let nextChildren = [];
-        for (let i = 0; i < newChild.startIndex; i++) {
-            nextChildren.push(this.children[i]);
-        }
-        nextChildren.push(new Token("node", newChild));
-        for (let i = newChild.endIndex+1; i < this.children.length; i++) {
-            nextChildren.push(this.children[i]);
-        }
-        this.children = nextChildren;
-    }
-
-
-    // returns unexpected close parentheses if found
-    findParen() {
-
-        for (let i = 0; i < this.children.length; i++) {
-            let child = this.children[i];
-            if (child.isOpenParen()) {
-                let parens = new Parens(this.children.slice(), i);
-                if (parens.error !== null) {
-                    this.error = `parens error: ${parens.error}`;
-                    return null;
-                }
-                this.addChild(parens);
-                this.shrunkBy += parens.endIndex - parens.startIndex;
-                continue;
-            }
-            if (child.isCloseParen()) {
-                return i;
-            }
-        }
-
-        return null;
-        
-    }
-
-    findAdds() {
-        for (let i = 0; i < this.children.length; i++) {
-            let child = this.children[i];
-            if (child.isPlus()) {
-                let add = new Add(this.children.slice(), i);
-                if (add.error !== null) {
-                    this.error = `add error: ${add.error}`;
-                    return
-                }
-                this.addChild(add);
-                this.shrunkBy += add.endIndex - add.startIndex;
-            }
-        }
-    }
-
-    toString() {
-        return `${this.type}(${this.children.map(
-            (child) => `${child.type}{${child.content.toString()}}`
-        ).join()})`;
-    }
-}
-
-class Parens extends Tree {
-    constructor(tokens, index) {
-        super(tokens);
-        this.type = "PARENS";
-        if (!this.children[index].isOpenParen()) {
-            console.error("ERROR index isn't even parens");
-        }
-        // exclude all that comes before the open paren
-        this.startIndex = index;
-        this.children.splice(0, this.startIndex+1);
-        this.shrunkBy += this.startIndex+1;
-
-        let closeParenLocation = this.findParen();
-        this.endIndex = this.shrunkBy+closeParenLocation;
-
-        if (closeParenLocation === null) {
-            this.error = "NO CLOSE PARENTHESES";
-            return;
-        }
-        this.children.splice(closeParenLocation, this.children.length-closeParenLocation);
-    }
-}
-
-class Add extends Tree {
-    constructor(tokens, index) {
-        super(tokens);
-        console.log(this.children.slice());
-        console.log(index);
-        this.type = "ADD";
-        this.startIndex = index-1;
-        this.endIndex = index+1;
-        if (!this.children[index].isPlus()) {
-            console.error("ERROR index isn't even plus");
-        }
-        if (!(index > 0 && this.children[index-1].type !== "node")) {
-            this.error = "MISSING LEFT ADDITION ELEMENT";
-            return;
-        }
-        if (!(this.children.length >= index && this.children[index+1].type === "node")) {
-            this.error = "MISSION RIGHT ADDITION ELEMENT";
-            return;
-        }
-        this.children.splice(0, this.startIndex);
-        this.shrunkBy += this.startIndex;
-        this.children.splice(2, this.children.length-2);
-        this.children.splice(0);
+    render() {
+        return (
+            <div style = {{"width": "100px", "height": "100px", "backgroundColor": this.state.color, "opacity": (this.state.display)?1:0}}></div>
+        );
     }
 }
 
 ReactDOM.render(
-    <Calculator/>
+    <App/>
     , document.getElementById('root'));
