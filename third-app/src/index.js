@@ -1,305 +1,166 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-class Calculator extends React.Component {
+const MAZE_SIZE = 12;
+const WALL_RATIO = 0.3;
+
+class App extends React.Component {
     constructor(props) {
         super(props);
+
         this.state = {
-            "answer": "Please enter an expression."
+            "path": null,
+            "grid": initialGrid([
+                ...edges(MAZE_SIZE),
+                ...withinEdges(1, MAZE_SIZE-1)
+            ], MAZE_SIZE)
         }
     }
 
     render() {
         return (
             <div>
-                <input onChange={(e) => this.processChange(e)} type="text"/>
-                <h1>{this.state.answer}</h1>
+                <Maze size = {MAZE_SIZE} rows = {this.state.grid} path = {this.state.path}/>
+                <button onClick = {(e) => this.pathfind()}>FIND PATH</button>
             </div>
         );
     }
 
-    processChange(event) {
-        console.clear();
-        this.setState({
-            ...this.state,
-            "answer": "..."
-        });
-        this.setState({
-            ...this.state,
-            "answer": this.calculate(event.target.value)
-        });
-    }
-
-    calculate(text) {
-        let {tree, error} = tokenize(text);
-        if (error !== null) {
-            console.error(error);
-            return "error! see developer console for more info.";
-        }
-
-        tree.parse();
-        if (tree.error !== null) {
-            return `error: ${tree.error}`;
-        }
-        console.log(tree);
-        console.log(`STRING: ${tree.toString()}`);
-        let val = tree.value();
-        if (tree.error !== null) {
-            return `error: ${tree.error}`;
-        }
-        return val;
+    pathfind() {
+        let unvisited = this.state.grid
+        .map(
+            (row, y) => row.map(
+                (item) => Object.assign({}, item)
+            ).filter(
+                (item, x) => x !== 1 || y !== 1
+            )
+        ).reduce(
+            (acc, val) => acc.concat(val),
+            []
+        );
+        console.log(unvisited);
     }
 }
 
-const tokenize = function(text) {
-    let tokens = [];
-    let char;
-    let digitSequence = 0;
-    for (let i = 0; i < text.length; i++) {
-        char = text.charAt(i);
-        if (/\s/.test(char)) {
-            continue;
-        }
-        if (/\d/.test(char)) {
-            digitSequence *= 10;
-            digitSequence += Number(char);
-            continue;
-        }
-        if (digitSequence !== 0) {
-            tokens.push(new Token("value", digitSequence, tokens.length));
-            digitSequence = 0;
-        }
-        if (/[()*/+-]/.test(char)) {
-            tokens.push(new Token("marker", char, tokens.length));
-            continue;
-        }
-        return {"tree": null, "error": `unexpected character: '${char}' at index ${i}`};
+const edges = (size) => {
+    let list = [];
+    for (let x = 0; x < size; x++) {
+        list.push(new Coordinate(x, 0));
+        list.push(new Coordinate(x, size-1));
     }
-    if (digitSequence !== 0) {
-        tokens.push(new Token("value", digitSequence, tokens.length));
+    for (let y = 0; y < size; y++) {
+        list.push(new Coordinate(0, y));
+        list.push(new Coordinate(size-1, y));
     }
-    return {"tree": new Tree(tokens), "error": null};
+    return list;
 }
 
-class Token {
-    constructor(type, content, index) {
-        if (type !== "node" && type !== "marker" && type !== "value") {
-            console.error("TOKEN MADE WITH INVALID TYPE");
-            this.type = "ERROR ERROR";
-            this.content = "ERROR ERROR";
-            return;
-        }
-        this.type = type;
-        this.content = content;
-        this.index = index;
-    }
-}
-
-class Tree {
-    constructor(tokens) {
-        this.error = null;
-        this.children = tokens;
-        this.start = 0;
-        this.end = this.children.length-1;
-        this.type = "TREE";
-    }
-
-    addChild(newChild) {
-        console.log("adding child");
-        console.log(newChild);
-        this.children = [
-            ...this.children.slice(0, newChild.start),
-            new Token("node", newChild),
-            ...this.children.slice(newChild.end + 1, this.children.length),
-        ];
-    }
-
-    parse(tier = 0) {
-        const order = [
-            [Paren, CloseParen],
-            [Mul, Quo],
-            [Add, Sub]
-        ];
-
-        for (;tier < order.length; tier++) {
-            console.log("starting next tier");
-            for (let i = 0; i < this.children.length; i++) {
-                console.log(`i: ${i}`)
-                for (let type of order[tier]) {
-                    console.log(`starting type ${type.name} at index ${i}`);
-                    if (type.markedBy(this.children[i])) {
-                        let newChild = new (type)(this.children.slice(), i, tier);
-                        this.addChild(newChild);
-                        if (newChild.error !== null) {
-                            this.error = `error while in type ${type.name}: ${newChild.error}`;
-                            return;
-                        }
-                        i = newChild.start;
-                    }
-                }
+const withinEdges = (lower, upper) => {
+    let list = [];
+    for (let x = lower; x < upper; x++) {
+        for (let y = lower; y < upper; y++) {
+            if (Math.random() <= WALL_RATIO) {
+                list.push(new Coordinate(x, y));
             }
         }
     }
+    return list;
+}
 
-    toString() {
-        return `${this.type}(${this.children.map(
-            (child) => `${(child.type==="node")?"":child.type}{${child.content.toString()}}`
-        ).join()})`;
+const initialGrid = (walls, size) => {
+    let rows = [];
+    for (let y = 0; y < size; y++) {
+        rows.push([]);
+        for (let x = 0; x < size; x++) {
+            rows[y].push(new Node());
+        }
     }
+    console.log("checking walls");
+    console.log(rows);
+    for (let i = 0; i < walls.length; i++) {
+        console.log(`checking wall at x: ${walls[i].y}, y: ${walls[i].x}`);
+        rows[walls[i].y][walls[i].x].type = "wall";
+    }
+    rows[1][1].type = "start";
+    rows[MAZE_SIZE-2][MAZE_SIZE-2].type = "end";
+    return rows;
+}
 
-    value() {
-        if (this.children.length !== 1) {
-            this.error = "wrong number of elements in group";
-            return;
-        }
-        if (this.children[0].type === "marker") {
-            this.error = "main element is operator";
-            return;
-        }
-        if (this.children[0].type === "value") {
-            return this.children[0].content;
-        }
-        let val = this.children[0].content.value();
-        if (this.children[0].content.error !== null) {
-          this.error = `error evaluating child: ${this.children[0].content.error}`;
-          return;
-        }
-        return val;
+class Coordinate {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
     }
 }
 
-class Paren extends Tree {
-    constructor(tokens, index, tier) {
-        super(tokens);
-        this.type = "PAREN";
-        if (Paren.markedBy(!this.children[index])) {
-            console.error("ERROR index isn't even paren");
-        }
-        // exclude all that comes before the open paren
-        this.start = index;
-
-        this.end = this.findMatching();
-        if (this.end === null) {
-            this.error = "NO CLOSE PARENTHESES";
-            return;
-        }
-        this.children = this.children.slice(this.start+1, this.end);
-        this.parse(tier);
-    }
-
-    static markedBy(token) {
-        return token.type === "marker" && token.content === "(";
-    }
-
-    findMatching() {
-        let starts = 0;
-        for (let i = this.start; i < this.children.length; i++) {
-            if (Paren.markedBy(this.children[i])) {
-                starts += 1;
-            } else if (CloseParen.markedBy(this.children[i])) {
-                starts -= 1;
-            }
-            if (starts === 0) {
-                return i;
-            }
-        }
-        return null;
-    }
-
-}
-
-class CloseParen {
-    constructor(tokens, index) {
-        this.error = "MISMATCHED PARENTHESES";
-        return;
-    }
-
-    static markedBy(token) {
-        return token.type === "marker" && token.content === ")";
+class Maze extends React.Component {
+    render() {
+        return (
+            <table border = "1">
+                <tbody>
+                    {this.props.rows.map(
+                        (row, i) => <MazeRow key = {i} items = {row}/>
+                    )}
+                </tbody>
+            </table>
+        );
     }
 }
 
-const binaryOperator = (type, markedBy, evaluate) => {
-    return class extends Tree {
-        constructor(tokens, markerLocation, tier) {
-            super(tokens);
-            console.log(this.children.slice());
-            console.log(markerLocation);
-            this.type = type;
-            if (markedBy(!this.children[markerLocation])) {
-                console.error("ERROR markerLocation isn't even marker");
-            }
-            this.start = markerLocation-1;
-            this.end = markerLocation+1;
-            this.children = [
-                this.children[this.start],
-                this.children[this.end]
-            ];
-            if (this.children[0] === undefined || this.children[0].type === "marker") {
-                this.error = "INVALID FIRST OPERAND";
-                return;
-            }
-            if (this.children[1] === undefined || this.children[1].type === "marker") {
-                this.error = "INVALID SECOND OPERAND";
-                return;
-            }
-            this.parse(tier);
-        }
-
-        static markedBy(token) {
-            return markedBy(token);
-        }
-
-        value() {
-            let val0;
-            if (this.children[0].type === "value") {
-                val0 = this.children[0].content;
-            } else {
-                val0 = this.children[0].content.value();
-                if (this.children[0].content.error !== null) {
-                    this.error = `error evaluating first child: ${this.children[0].content.error}`;
-                    return;
-                }
-            }
-            let val1;
-            if (this.children[1].type === "value") {
-                val1 = this.children[1].content;
-            } else {
-                val1 = this.children[1].content.value();
-                if (this.children[1].content.error !== null) {
-                    this.error = `error evaluating second child: ${this.children[1].content.error}`;
-                    return;
-                }
-            }
-            return evaluate(val0, val1);
-        }
+class MazeRow extends React.Component {
+    render() {
+        return (
+            <tr>
+                {this.props.items.map(
+                    (item, i) => 
+                    <td key = {i}>
+                        <MazeCell type = {item.type}/>
+                    </td>
+                )}
+            </tr>
+        );
     }
 }
 
-const Mul = binaryOperator(
-    "MUL",
-    (token) => token.type === "marker" && token.content === "*",
-    (lhs, rhs) => lhs * rhs
-);
+class MazeCell extends React.Component {
+    render() {
+        console.log(this.props.type);
+        let color;
+        switch (this.props.type) {
+            case "wall":
+                color = "grey";
+                break;
+            case "way":
+                color = "white";
+                break;
+            case "start":
+                color = "green";
+                break;
+            case "end":
+                color = "red";
+                break;
+            default:
+                color = "salmon"
+        }
+        return (
+            <div style = {{
+                "backgroundColor": color,
+                "width": "50px",
+                "height": "50px",
+            }}>
+            </div>
+        );
+    }
+}
 
-const Quo = binaryOperator(
-    "QUO",
-    (token) => token.type === "marker" && token.content === "/",
-    (lhs, rhs) => lhs / rhs
-);
-
-const Add = binaryOperator(
-    "ADD",
-    (token) => token.type === "marker" && token.content === "+",
-    (lhs, rhs) => lhs + rhs
-);
-
-const Sub = binaryOperator(
-    "SUB",
-    (token) => token.type === "marker" && token.content === "-",
-    (lhs, rhs) => lhs - rhs
-);
+class Node {
+    constructor() {
+        this.type = "way";
+        this.visited = false;
+        this.distance = Infinity;
+    }
+}
 
 ReactDOM.render(
-    <Calculator/>
+    <App/>
     , document.getElementById('root'));
