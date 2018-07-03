@@ -1,193 +1,305 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-class App extends React.Component {
+class Calculator extends React.Component {
     constructor(props) {
         super(props);
-        this.indicator = React.createRef();
-        let newX = random(100);
-        let newY = random(100);
         this.state = {
-            "initiateBlink": true,
-            "mouseDistance": Infinity,
-            "crabsFound": 0,
-            "crabLocation": new SubPosition(newX, newY)
+            "answer": "Please enter an expression."
         }
-        document.addEventListener("mousemove", (e) => {
-            let xPercent = 100*e.pageX/window.innerWidth;
-            let yPercent = 100*e.pageY/window.innerHeight;
-            // console.log(`Mouse moved! x: ${xPercent} y: ${yPercent}`);
-            this.setState({
-                ...this.state,
-                "mouseDistance": this.state.crabLocation.distance(new SubPosition(xPercent, yPercent))
-            });
-            if (this.state.initiateBlink) {
-                this.setState({
-                    ...this.state,
-                    "initiateBlink": false
-                });
-                this.indicator.current.blink();
-            }
-        });
     }
 
     render() {
-
-
         return (
             <div>
-                <h1>{this.state.crabsFound} cat{(this.state.crabsFound === 1)?"":"s"} found</h1>
-                <ProximityIndicator proximity={this.state.mouseDistance} ref={this.indicator}/>
-                <Rustacean moveMe={(e) => this.newCrab()} height={60} position={this.state.crabLocation}/>
+                <input onChange={(e) => this.processChange(e)} type="text"/>
+                <h1>{this.state.answer}</h1>
             </div>
         );
     }
 
-    newCrab() {
-        console.log("NEW CRAB!!!!");
-        let newX = random(100);
-        let newY = random(100);
-        this.indicator.current.stopBlinking();
+    processChange(event) {
+        console.clear();
         this.setState({
             ...this.state,
-            "initiateBlink": true,
-            "crabsFound": this.state.crabsFound+1,
-            "crabLocation": new SubPosition(newX, newY)
+            "answer": "..."
+        });
+        this.setState({
+            ...this.state,
+            "answer": this.calculate(event.target.value)
         });
     }
-}
 
-const random = function(max) {
-    return Math.random()*max;
-}
-
-class SubPosition {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    distance(other) {
-        let vw = window.innerWidth;
-        let vh = window.innerHeight;
-        let distanceX = this.normalizedX(vw, vh) - other.normalizedX(vw, vh);
-        let distanceY = this.y - other.y;
-        return Math.sqrt((distanceX * distanceX) + (distanceY * distanceY));
-    }
-
-    normalizedX(parentWidth, parentHeight) {
-        return this.x * parentHeight/parentWidth;
-    }
-}
-
-class Rustacean extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            "display": false
+    calculate(text) {
+        let {tree, error} = tokenize(text);
+        if (error !== null) {
+            console.error(error);
+            return "error! see developer console for more info.";
         }
-    }
 
-    render() {
-        let height = this.props.height;
-        let width = this.props.height * 1.5;
-        return (
-            <div onClick={(e) => this.show()} style={{
-                "position":"absolute",
-                "left": `${this.props.position.x}vw`,
-                "top": `${this.props.position.y}vh`, 
-                "marginLeft": `${-(width/2)}px`,
-                "marginTop": `${-(height/2)}px`,
-                "cursor": "pointer",
-                "opacity": this.state.display?1:0
-            }}>
-                <img src="/cat.jpg" alt="rustacean" style={{"height": `${height}px`, "width": `${width}px`}}/>
-            </div>
-        );
+        tree.parse();
+        if (tree.error !== null) {
+            return `error: ${tree.error}`;
+        }
+        console.log(tree);
+        console.log(`STRING: ${tree.toString()}`);
+        let val = tree.value();
+        if (tree.error !== null) {
+            return `error: ${tree.error}`;
+        }
+        return val;
     }
+}
 
-    show() {
-        if (this.display) {
+const tokenize = function(text) {
+    let tokens = [];
+    let char;
+    let digitSequence = 0;
+    for (let i = 0; i < text.length; i++) {
+        char = text.charAt(i);
+        if (/\s/.test(char)) {
+            continue;
+        }
+        if (/\d/.test(char)) {
+            digitSequence *= 10;
+            digitSequence += Number(char);
+            continue;
+        }
+        if (digitSequence !== 0) {
+            tokens.push(new Token("value", digitSequence, tokens.length));
+            digitSequence = 0;
+        }
+        if (/[()*/+-]/.test(char)) {
+            tokens.push(new Token("marker", char, tokens.length));
+            continue;
+        }
+        return {"tree": null, "error": `unexpected character: '${char}' at index ${i}`};
+    }
+    if (digitSequence !== 0) {
+        tokens.push(new Token("value", digitSequence, tokens.length));
+    }
+    return {"tree": new Tree(tokens), "error": null};
+}
+
+class Token {
+    constructor(type, content, index) {
+        if (type !== "node" && type !== "marker" && type !== "value") {
+            console.error("TOKEN MADE WITH INVALID TYPE");
+            this.type = "ERROR ERROR";
+            this.content = "ERROR ERROR";
             return;
         }
-        this.setState({
-            ...this.state,
-            display: true
-        });
-        setTimeout(
-            () => {
-                this.props.moveMe();
-                this.setState({
-                    ...this.state,
-                    "display": false
-                })
-            }, 1500
-        );
+        this.type = type;
+        this.content = content;
+        this.index = index;
     }
 }
 
-class ProximityIndicator extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            "timer": null,
-            "display": false,
-            "color": "grey"
-        };
+class Tree {
+    constructor(tokens) {
+        this.error = null;
+        this.children = tokens;
+        this.start = 0;
+        this.end = this.children.length-1;
+        this.type = "TREE";
     }
 
-    stopBlinking() {
-        clearTimeout(this.state.timer);
+    addChild(newChild) {
+        console.log("adding child");
+        console.log(newChild);
+        this.children = [
+            ...this.children.slice(0, newChild.start),
+            new Token("node", newChild),
+            ...this.children.slice(newChild.end + 1, this.children.length),
+        ];
     }
 
-    blink() {
-        this.stopBlinking();
-        console.log("blink");
-        let color = "grey";
-        let delayScale = 50;
-        let proximity = this.props.proximity;
-        if (proximity <= 30) {
-            color = "yellow";
-            delayScale = 30;
-        }
-        if (proximity <= 15) {
-            color = "orange";
-            delayScale = 15;
-        }
-        if (proximity <= 5) {
-            color = "red";
-            delayScale = 5;
-        }
-        let timer = setTimeout(
-            () => {
-                let timer = setTimeout(
-                    () => {
-                        this.blink();
-                    }, 70
-                );
-                this.setState({
-                    ...this.state,
-                    "timer": timer,
-                    "display": false
-                });
+    parse(tier = 0) {
+        const order = [
+            [Paren, CloseParen],
+            [Mul, Quo],
+            [Add, Sub]
+        ];
 
-            }, (delayScale*35)-70
-        );
-        this.setState({
-            ...this.state,
-            "timer": timer,
-            "display": true,
-            "color": color
-        });
+        for (;tier < order.length; tier++) {
+            console.log("starting next tier");
+            for (let i = 0; i < this.children.length; i++) {
+                console.log(`i: ${i}`)
+                for (let type of order[tier]) {
+                    console.log(`starting type ${type.name} at index ${i}`);
+                    if (type.markedBy(this.children[i])) {
+                        let newChild = new (type)(this.children.slice(), i, tier);
+                        this.addChild(newChild);
+                        if (newChild.error !== null) {
+                            this.error = `error while in type ${type.name}: ${newChild.error}`;
+                            return;
+                        }
+                        i = newChild.start;
+                    }
+                }
+            }
+        }
     }
 
-    render() {
-        return (
-            <div style = {{"width": "100px", "height": "100px", "backgroundColor": this.state.color, "opacity": (this.state.display)?1:0}}></div>
-        );
+    toString() {
+        return `${this.type}(${this.children.map(
+            (child) => `${(child.type==="node")?"":child.type}{${child.content.toString()}}`
+        ).join()})`;
+    }
+
+    value() {
+        if (this.children.length !== 1) {
+            this.error = "wrong number of elements in group";
+            return;
+        }
+        if (this.children[0].type === "marker") {
+            this.error = "main element is operator";
+            return;
+        }
+        if (this.children[0].type === "value") {
+            return this.children[0].content;
+        }
+        let val = this.children[0].content.value();
+        if (this.children[0].content.error !== null) {
+          this.error = `error evaluating child: ${this.children[0].content.error}`;
+          return;
+        }
+        return val;
     }
 }
+
+class Paren extends Tree {
+    constructor(tokens, index, tier) {
+        super(tokens);
+        this.type = "PAREN";
+        if (Paren.markedBy(!this.children[index])) {
+            console.error("ERROR index isn't even paren");
+        }
+        // exclude all that comes before the open paren
+        this.start = index;
+
+        this.end = this.findMatching();
+        if (this.end === null) {
+            this.error = "NO CLOSE PARENTHESES";
+            return;
+        }
+        this.children = this.children.slice(this.start+1, this.end);
+        this.parse(tier);
+    }
+
+    static markedBy(token) {
+        return token.type === "marker" && token.content === "(";
+    }
+
+    findMatching() {
+        let starts = 0;
+        for (let i = this.start; i < this.children.length; i++) {
+            if (Paren.markedBy(this.children[i])) {
+                starts += 1;
+            } else if (CloseParen.markedBy(this.children[i])) {
+                starts -= 1;
+            }
+            if (starts === 0) {
+                return i;
+            }
+        }
+        return null;
+    }
+
+}
+
+class CloseParen {
+    constructor(tokens, index) {
+        this.error = "MISMATCHED PARENTHESES";
+        return;
+    }
+
+    static markedBy(token) {
+        return token.type === "marker" && token.content === ")";
+    }
+}
+
+const binaryOperator = (type, markedBy, evaluate) => {
+    return class extends Tree {
+        constructor(tokens, markerLocation, tier) {
+            super(tokens);
+            console.log(this.children.slice());
+            console.log(markerLocation);
+            this.type = type;
+            if (markedBy(!this.children[markerLocation])) {
+                console.error("ERROR markerLocation isn't even marker");
+            }
+            this.start = markerLocation-1;
+            this.end = markerLocation+1;
+            this.children = [
+                this.children[this.start],
+                this.children[this.end]
+            ];
+            if (this.children[0] === undefined || this.children[0].type === "marker") {
+                this.error = "INVALID FIRST OPERAND";
+                return;
+            }
+            if (this.children[1] === undefined || this.children[1].type === "marker") {
+                this.error = "INVALID SECOND OPERAND";
+                return;
+            }
+            this.parse(tier);
+        }
+
+        static markedBy(token) {
+            return markedBy(token);
+        }
+
+        value() {
+            let val0;
+            if (this.children[0].type === "value") {
+                val0 = this.children[0].content;
+            } else {
+                val0 = this.children[0].content.value();
+                if (this.children[0].content.error !== null) {
+                    this.error = `error evaluating first child: ${this.children[0].content.error}`;
+                    return;
+                }
+            }
+            let val1;
+            if (this.children[1].type === "value") {
+                val1 = this.children[1].content;
+            } else {
+                val1 = this.children[1].content.value();
+                if (this.children[1].content.error !== null) {
+                    this.error = `error evaluating second child: ${this.children[1].content.error}`;
+                    return;
+                }
+            }
+            return evaluate(val0, val1);
+        }
+    }
+}
+
+const Mul = binaryOperator(
+    "MUL",
+    (token) => token.type === "marker" && token.content === "*",
+    (lhs, rhs) => lhs * rhs
+);
+
+const Quo = binaryOperator(
+    "QUO",
+    (token) => token.type === "marker" && token.content === "/",
+    (lhs, rhs) => lhs / rhs
+);
+
+const Add = binaryOperator(
+    "ADD",
+    (token) => token.type === "marker" && token.content === "+",
+    (lhs, rhs) => lhs + rhs
+);
+
+const Sub = binaryOperator(
+    "SUB",
+    (token) => token.type === "marker" && token.content === "-",
+    (lhs, rhs) => lhs - rhs
+);
 
 ReactDOM.render(
-    <App/>
+    <Calculator/>
     , document.getElementById('root'));
