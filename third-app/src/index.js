@@ -114,34 +114,27 @@ class Tree {
         ];
     }
 
-    parse() {
+    parse(tier = 0) {
         const order = [
             [Paren, CloseParen],
             [Mul, Quo],
             [Add, Sub]
         ];
 
-        for (let tier of order) {
+        for (;tier < order.length; tier++) {
             console.log("starting next tier");
             for (let i = 0; i < this.children.length; i++) {
                 console.log(`i: ${i}`)
-                for (let type of tier) {
+                for (let type of order[tier]) {
                     console.log(`starting type ${type.name} at index ${i}`);
                     if (type.markedBy(this.children[i])) {
-                        let newChild = new (type)(this.children.slice(), i);
+                        let newChild = new (type)(this.children.slice(), i, tier);
                         this.addChild(newChild);
                         if (newChild.error !== null) {
                             this.error = `error while in type ${type.name}: ${newChild.error}`;
                             return;
                         }
                         i = newChild.start;
-                    }
-                }
-                if (this.children[i].type === "node") {
-                    this.children[i].content.parse();
-                    if (this.children[i].content.error !== null) {
-                        this.error = `error in parsing child: ${this.children[i].content.error}`;
-                        return;
                     }
                 }
             }
@@ -176,7 +169,7 @@ class Tree {
 }
 
 class Paren extends Tree {
-    constructor(tokens, index) {
+    constructor(tokens, index, tier) {
         super(tokens);
         this.type = "PAREN";
         if (Paren.markedBy(!this.children[index])) {
@@ -191,6 +184,7 @@ class Paren extends Tree {
             return;
         }
         this.children = this.children.slice(this.start+1, this.end);
+        this.parse(tier);
     }
 
     static markedBy(token) {
@@ -227,7 +221,7 @@ class CloseParen {
 
 const binaryOperator = (type, markedBy, evaluate) => {
     return class extends Tree {
-        constructor(tokens, markerLocation) {
+        constructor(tokens, markerLocation, tier) {
             super(tokens);
             console.log(this.children.slice());
             console.log(markerLocation);
@@ -249,6 +243,7 @@ const binaryOperator = (type, markedBy, evaluate) => {
                 this.error = "INVALID SECOND OPERAND";
                 return;
             }
+            this.parse(tier);
         }
 
         static markedBy(token) {
