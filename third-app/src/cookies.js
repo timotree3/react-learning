@@ -5,24 +5,30 @@ class App extends React.Component {
     constructor(props) {
         super(props);
 
+
+        
         this.state = {
             cookies: 0,
             cps: 0,
             cpc: 1,
+            timer: setInterval(
+                () => {
+                    this.setState({
+                        ...this.state,
+                        cookies: this.state.cookies + this.state.cps,
+                    });
+                }, 1000
+            )
         };
     }
     
     render() {
         return (
             <div>
-                <Cookie onClick = {this.cookieClick()}/>
-                <Shop onPurchase = {(purchase) => {
-                    this.setState({
-                        cookies: this.state.cookies - purchase.cost,
-                        cps: this.state.cps + purchase.cps,
-                        cpc: this.state.cpc + purchase.cpc
-                    })
-                }} balance = {this.state.cookies}/>
+                <h1>Balance: {Math.floor(this.state.cookies)}</h1>
+                <h2>Cookies per second: {this.state.cps}</h2>
+                <Cookie onClick = {() => this.cookieClick()}/>
+                <Shop onPurchase = {(purchase) => this.bought(purchase)} balance = {this.state.cookies}/>
             </div>
         );
     }
@@ -31,13 +37,24 @@ class App extends React.Component {
         this.setState({
             ...this.state,
             cookies: this.state.cookies + this.state.cpc,
-        })
+        });
+    }
+
+    bought(purchase) {
+        this.setState({
+            cookies: this.state.cookies - purchase.cost,
+            cps: this.state.cps + purchase.cps,
+            cpc: this.state.cpc + purchase.cpc
+        });
     }
 }
 
 const Cookie = (props) => {
     return (
-        <img src = "https://cdn.shopify.com/s/files/1/1463/8084/files/10212_Protein_Cookie_LandingPage_Intro_Cookie.png?7652470218512709090" onClick = {props.onClick}/>
+        <img alt = "cookie" src = "https://cdn.shopify.com/s/files/1/1463/8084/files/10212_Protein_Cookie_LandingPage_Intro_Cookie.png?7652470218512709090" onClick = {props.onClick} style = {{
+            "width": "100px",
+            "height": "100px"
+        }}/>
     );
 }
 
@@ -69,11 +86,15 @@ const Shop = (props) => {
 
 const ShopItem = (props) => {
     return (
-        <tr onClick = {props.onPurchaseAttempt()} style = {{
-            "cursor": "pointer"
-        }}>
-            <td>{props.name}</td>
-            <td>{props.cost}</td>
+        <tr>
+            <td
+                onClick = {() => props.onPurchaseAttempt()}
+                style = {{
+                    "cursor": "pointer",
+                    "backgroundColor": "tan"
+                }}
+            >Buy a {props.name}</td>
+            <td>they cost {props.cost}</td>
         </tr>
     )
 }
