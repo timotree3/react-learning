@@ -270,8 +270,8 @@ class MazeCell extends React.Component {
         return (
             <div style = {{
                 "backgroundColor": color,
-                "width": "50px",
-                "height": "50px",
+                "width": "10px",
+                "height": "10px",
             }}>
             </div>
         );
