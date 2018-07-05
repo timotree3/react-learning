@@ -19,6 +19,10 @@ class Game extends React.Component {
     step() {
         let newStretches = this.state.stretches.slice();
         newStretches[0].extend();
+        if (newStretches[newStretches.length-1].shrink()) {
+            newStretches.pop()
+        }
+        
         this.setState({
             head: this.state.head.added(this.state.stretches[0].direction.toOffset().scaled(-1)),
             stretches: [stretches[0].extended(), ...stretches.slice(1)],
@@ -100,52 +104,6 @@ class Head extends React.Component {
         return (
             <Node x = {this.props.x} y = {this.props.y}/>
         )
-    }
-}
-
-class Direction {
-    constructor(value) {
-        this.value = value;
-    }
-
-    static from_arrow(keyCode) {
-        switch(keyCode) {
-            case 38: // UP
-                return new Direction(-2);
-            case 37: // LEFT
-                return new Direction(-1);
-            case 39: // RIGHT
-                return new Direction(1);
-            case 40: // DOWN
-                return new Direction(2);
-        }
-    }
-
-    negate() {
-        return new Direction(-this.value);
-    }
-
-    toOffset() {
-        if (this.code === -1 || this.code === 1) {
-            return new Vector(this.code, 0);
-        }
-        return new Vector(0, this.code<<1)
-    }
-
-    static up() {
-        return new Direction(-2);
-    }
-
-    static left() {
-        return new Direction(-1);
-    }
-
-    static right() {
-        return new Direction(0);
-    }
-
-    static down() {
-        return new Direction(1);
     }
 }
 
