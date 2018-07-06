@@ -1,4 +1,6 @@
 import React from 'react'
+import Snake from './Snake'
+import Apple from './Apple'
 
 const CELL_SIZE = 30;
 const GRID_SIZE = 30;
@@ -9,3 +11,5 @@ const Grid = (apple, snake, onSnakeTurn) => (
         <Snake head = {snake.head} tail = {snake.tail} node_size = {CELL_SIZE} />
     </svg>
 )
+
+export default Grid

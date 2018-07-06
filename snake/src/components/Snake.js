@@ -5,8 +5,8 @@ const getNodes = stretches => {
         (state, stretch) => {
             let location = {...state.location}
             let nodes = [...state.nodes]
-            for (steps = 0; steps < stretch.distance; steps++) {
-                offset = stretch.direction.toOffset()
+            for (let steps = 0; steps < stretch.distance; steps++) {
+                let offset = stretch.direction.toOffset()
                 location.x += offset.x
                 location.y += offset.y
                 nodes.push({...location})
@@ -32,3 +32,4 @@ const Snake = (head, tail, node_size) => (
     </g>
 )
 
+export default Snake

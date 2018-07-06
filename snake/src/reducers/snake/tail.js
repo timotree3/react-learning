@@ -1,4 +1,4 @@
-import '../../types/direction'
+import { Direction } from '../../types/direction'
 
 const initialState = [
     {

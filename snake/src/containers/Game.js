@@ -7,7 +7,7 @@ const mapStateToProps = state => ({
     snake: state.snake
 })
 
-const mapDispatchToProps = state => ({
+const mapDispatchToProps = dispatch => ({
     onSnakeTurn: direction => {
         dispatch(turnSnake(direction))
     } 
