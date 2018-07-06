@@ -1,4 +1,4 @@
-import { Direction } from '../../types/direction'
+import Direction from '../../types/direction'
 
 const initialState = {
     x: 3,
@@ -20,5 +20,9 @@ const head = (state = initialState, action) => {
                 x: state.x + x,
                 y: state.y + y,
             }
+        default:
+            return state
     }
 }
+
+export default head

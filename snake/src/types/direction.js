@@ -31,6 +31,8 @@ class Direction {
                 return new Direction(1)
             case 40: // DOWN
                 return new Direction(2)
+            default:
+                console.error("WRONG KEYCODE")
         }
     }
 

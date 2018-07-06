@@ -1,6 +1,6 @@
 import React from 'react'
 
-const getNodes = stretches => {
+const getNodes = (head, stretches) => (
     stretches.reduce(
         (state, stretch) => {
             let location = {...state.location}
@@ -15,18 +15,19 @@ const getNodes = stretches => {
                 nodes,
                 location
             }
-        }
+        },
+        {location: head, nodes: []}
     ).nodes
-}
+)
 
-const Snake = (head, tail, node_size) => (
+const Snake = ({head, tail, node_size}) => (
     <g>
         {[
             {x: head.x, y: head.y},
-            ...getNodes(tail)
+            ...getNodes(head, tail)
         ].map(
             location => (
-                <circle cx = {location.x} cy = {location.y} r = {node_size} />
+                <circle cx = {location.x * node_size * 1.5} cy = {location.y * node_size * 1.5} r = {node_size} fill = "lime" />
             )
         )}
     </g>

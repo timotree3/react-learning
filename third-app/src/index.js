@@ -1,217 +1,275 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-const GRID_SIZE = 900;
-const GRID_SLOTS = 30;
-const SLOT_SIZE = GRID_SIZE/GRID_SLOTS;
-const NODE_SIZE = SLOT_SIZE*1.2;
-
-class Game extends React.Component {
-    constructor(props) {
-        super(props);
-        
-        this.state = {
-            head: new Vector(3, 3),
-            stretches: [new Stretch(Direction.right(), 1)]
-        }
-    }
-
-    step() {
-        let newStretches = this.state.stretches.slice();
-        newStretches[0].extend();
-        this.setState({
-            head: this.state.head.added(this.state.stretches[0].direction.toOffset().scaled(-1)),
-            stretches: [stretches[0].extended(), ...stretches.slice(1)],
-        });
-        if(this.stretches[this.stretches.length-1].shrink()){
-            this.stretches.pop();
-        }
-    }
-
-    turn(heading) {
-        if (this.stretches[0].distance === 0) {
-            this.stretches[0].direction = heading;
-        } else {
-            this.stretches.unshift(new Stretch(heading, 0));
-        }
-    }
-
-    render() {
-        let apple = (<Apple x = {SLOT_SIZE*3} y = {SLOT_SIZE*3}/>);
-        let stretches = [];
-        return (
-            <svg>
-                {apple}
-                <Snake start = {this.head} stretches = {this.stretches}/>
-            </svg>
-        );
-    }
-}
-
-class Apple extends React.Component {
-    render() {
-        return (
-            <circle
-                cx = {this.props.x}
-                cy = {this.props.y}
-                r = {SLOT_SIZE}
-                fill = "red"
-            />
-        )
-    }
-}
-
-class Snake extends React.Component {
-    render() {
-        let start = this.props.start;
-        let tail = [];
-        for (let stretch of this.props.stretches) {
-            tail.push(<Stretch start = {start} direction = {stretch.direction} distance = {stretch.direction}/>);
-            start = stretch.end(start);
-        }
-
-        return (
-            <g>
-                <Head x = {this.props.start.x*SLOT_SIZE} y = {this.props.start.y*SLOT_SIZE} direction = {this.props.stretches[0].direction.negate()}/>
-                {tail}
-            </g>
-        )
-    }
-}
-
-class Node extends React.Component {
-    render() {
-        return (
-            <circle
-                cx = {this.props.x}
-                cy = {this.props.y}
-                r = {size}
-                fill = "green"
-            />
-        );
-    }
-}
-
-class Head extends React.Component {
-    render() {
-        switch (this.props.direction) {
-
-        }
-        return (
-            <Node x = {this.props.x} y = {this.props.y}/>
-        )
-    }
-}
-
-class Direction {
-    constructor(value) {
-        this.value = value;
-    }
-
-    static from_arrow(keyCode) {
-        switch(keyCode) {
-            case 38: // UP
-                return new Direction(-2);
-            case 37: // LEFT
-                return new Direction(-1);
-            case 39: // RIGHT
-                return new Direction(1);
-            case 40: // DOWN
-                return new Direction(2);
-        }
-    }
-
-    negate() {
-        return new Direction(-this.value);
-    }
-
-    toOffset() {
-        if (this.code === -1 || this.code === 1) {
-            return new Vector(this.code, 0);
-        }
-        return new Vector(0, this.code<<1)
-    }
-
-    static up() {
-        return new Direction(-2);
-    }
-
-    static left() {
-        return new Direction(-1);
-    }
-
-    static right() {
-        return new Direction(0);
-    }
-
-    static down() {
-        return new Direction(1);
-    }
-}
-
-class Vector {
+class Coord {
     constructor(x, y) {
         this.x = x;
         this.y = y;
     }
 
-    scale(scalar) {
-        this.x *= scalar;
-        this.y *= scalar;
+    offset(x, y) {
+        return new Coord(this.x - x, this.y - y);
     }
 
-    scaled(scalar) {
-        let v = new Vector(this.x, this.y);
-        v.scale(scalar);
-        return v;
+    neighbors() {
+        return [
+            this.offset(0, -1),
+            this.offset(-1, 0),
+            this.offset(+1, 0),
+            this.offset(0, +1)
+        ];
     }
 
-    add(vector) {
-        this.x += vector.x;
-        this.y += vector.y;
+    in(array) {
+        return array[this.y][this.x];
     }
 
-    added(vector) {
-        let v = new Vector(this.x, this.y);
-        v.add(vector);
-        return v;
-    }
-
-    normalized() {
-        return new Vector(Math.sign(this.x), Math.sign(this.y));
-    }
-
-    static from_direction(direction, magnitude) {
-        return direction.toOffset().scale(magnitude);
-    }
-
-    on_grid() {
-        return {
-            x: this.x * SLOT_SIZE,
-            y: this.y * SLOT_SIZE
-        }
+    static equal(a, b) {
+        return a.x === b.x && a.y === b.y;
     }
 }
 
-class Stretch {
-    constructor(direction, distance) {
-        this.direction = direction;
-        this.distance = distance;
+const MAZE_SIZE = 20;
+const WALL_RATIO = 0.3;
+const START = new Coord(1, 1);
+const END = new Coord(MAZE_SIZE-2, MAZE_SIZE-2);
+
+
+class App extends React.Component {
+    constructor(props) {
+        super(props);
+        this.size = MAZE_SIZE;
+        this.state = {
+            "grid": initialGrid([
+                ...edges(this.size),
+                ...withinEdges(1, this.size-1)
+            ], this.size),
+            "message": ""
+        }
     }
 
-    extended() {
-        return new Stretch(this.direction, this.distance + 1);
+    render() {
+        return (
+            <div>
+                <Maze size = {this.size} rows = {this.state.grid}/>
+                <button onClick = {(e) => this.pathFind()}>FIND PATH</button>
+                <h1>{this.state.message}</h1>
+            </div>
+        );
     }
 
-    shrunk() {
-        return new Stretch(this.direction, this.distance - 1);
+    pathFind() {
+        this.setState({
+            ...this.state,
+            "message": "finding path..."
+        });
+        let grid = [];
+        START.in(this.state.grid).type = "start";
+        START.in(this.state.grid).distance = 0;
+        END.in(this.state.grid).type = "end";
+        let unvisited_locations = [];
+        for (let y = 0; y < this.size; y++) {
+            grid.push([]);
+            for (let x = 0; x < this.size; x++) {
+                const coord = new Coord(x, y);
+                const node = Object.assign({}, coord.in(this.state.grid));
+                grid[y].push(node);
+                if (!node.visited && node.type !== "wall") {
+                    unvisited_locations.push(coord);
+                }
+            }
+        }
+        let {updatedGrid, found} = findPath(grid, unvisited_locations, START, END);
+        let message;
+        if (found) {
+            message = "";
+        } else {
+            message = "no path found";
+        }
+        this.setState({
+            ...this.state,
+            "grid": updatedGrid,
+            message
+        });
+    }
+}
+
+const findPath = (grid, unvisited_locations, start, end) => {
+    let current = start.in(grid);
+    while (!Coord.equal(current.location, end)) {
+        let neighbors = current.location
+        .neighbors()
+        .map(
+            (coord) => coord.in(grid),
+        )
+        .filter(
+            (node) => !node.visited && node.type !== "wall"
+        );
+        for (let i = 0; i < neighbors.length; i++) {
+            neighbors[i].distance = Math.min(
+                neighbors[i].distance,
+                current.distance + 1
+            );
+        }
+        current.visited = true;
+        unvisited_locations = unvisited_locations.filter(
+            (coords) => !Coord.equal(coords, current.location)
+        )
+        const fake_node = new Node(new Coord(-1, -1));
+        current = unvisited_locations
+        .map(
+            (coords) => coords.in(grid)
+        ).reduce(
+            closestNode,
+            fake_node
+        );
+        if (current === fake_node) {
+            // there is no path
+            console.log("there is no path");
+            return {"updatedGrid": grid, "found": false};
+        }
+    }
+    // we found the shortest path!
+    // retrace our steps
+    console.log("there is a path");
+    let path = [];
+    while (!Coord.equal(current.location, START)) {
+        path.unshift(current.location);
+        current.location.in(grid).type = "path";
+        let neighbors = current.location
+        .neighbors()
+        .map(
+            (coord) => coord.in(grid),
+        )
+        current = neighbors.reduce(
+            closestNode,
+            neighbors[0]
+        );
     }
 
-    end(start) {
-        return start.added(Vector.from_direction(this.direction, this.distance));
+    return {"updatedGrid": grid, "found": true};
+}
+
+const closestNode = (a, b) => {
+    if (a.distance > b.distance) {
+        return b;
+    } else {
+        return a;
+    }
+}
+
+const edges = (size) => {
+    let list = [];
+    for (let x = 0; x < size; x++) {
+        list.push(new Coord(x, 0));
+        list.push(new Coord(x, size-1));
+    }
+    for (let y = 0; y < size; y++) {
+        list.push(new Coord(0, y));
+        list.push(new Coord(size-1, y));
+    }
+    return list;
+}
+
+const withinEdges = (lower, upper) => {
+    let list = [];
+    for (let x = lower; x < upper; x++) {
+        for (let y = lower; y < upper; y++) {
+            if (Math.random() <= WALL_RATIO) {
+                list.push(new Coord(x, y));
+            }
+        }
+    }
+    return list;
+}
+
+const initialGrid = (walls, size) => {
+    let rows = [];
+    for (let y = 0; y < size; y++) {
+        rows.push([]);
+        for (let x = 0; x < size; x++) {
+            rows[y].push(new Node(new Coord(x, y)));
+        }
+    }
+    console.log("checking walls");
+    console.log(rows);
+    for (let i = 0; i < walls.length; i++) {
+        walls[i].in(rows).type = "wall";
+    }
+    return rows;
+}
+
+class Maze extends React.Component {
+    render() {
+        return (
+            <table border = "1">
+                <tbody>
+                    {this.props.rows.map(
+                        (row, i) => <MazeRow key = {i} items = {row}/>
+                    )}
+                </tbody>
+            </table>
+        );
+    }
+}
+
+class MazeRow extends React.Component {
+    render() {
+        return (
+            <tr>
+                {this.props.items.map(
+                    (item, i) => 
+                    <td key = {i}>
+                        <MazeCell type = {item.type}/>
+                    </td>
+                )}
+            </tr>
+        );
+    }
+}
+
+class MazeCell extends React.Component {
+    render() {
+        let color;
+        switch (this.props.type) {
+            case "wall":
+                color = "grey";
+                break;
+            case "way":
+                color = "white";
+                break;
+            case "start":
+                color = "green";
+                break;
+            case "end":
+                color = "red";
+                break;
+            case "path":
+                color = "black";
+                break;
+            default:
+                color = "salmon"
+        }
+        return (
+            <div style = {{
+                "backgroundColor": color,
+                "width": "50px",
+                "height": "50px",
+            }}>
+            </div>
+        );
+    }
+}
+
+class Node {
+    constructor(coords) {
+        this.type = "way";
+        this.visited = false;
+        this.distance = Infinity;
+        this.location = coords;
     }
 }
 
 ReactDOM.render(
-    <Game/>
+    <App/>
     , document.getElementById('root'));

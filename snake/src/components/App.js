@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
-import { Score } from '../containers/Score'
-import { Game } from '../containers/Game'
+import Score from '../containers/Score'
+import Game from '../containers/Game'
 
 class App extends Component {
     render() {

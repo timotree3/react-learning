@@ -1,4 +1,4 @@
-const apple = (state = {}, action) => {
+const apple = (state = {x: 1, y: 1}, action) => {
     switch (action.type) {
         case 'MOVE_APPLE':
             return {

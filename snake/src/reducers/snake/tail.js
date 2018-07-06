@@ -1,13 +1,13 @@
-import { Direction } from '../../types/direction'
+import Direction from '../../types/direction'
 
 const initialState = [
     {
-        distance: 0,
+        distance: 2,
         direction: Direction.left
     }
 ]
 
-const tail = (state = [], action) => {
+const tail = (state = initialState, action) => {
     switch (action.type) {
         case 'MOVE_SNAKE':
             return [
@@ -46,3 +46,5 @@ const tail = (state = [], action) => {
             return state
     }
 }
+
+export default tail

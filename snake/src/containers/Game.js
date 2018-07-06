@@ -2,6 +2,11 @@ import { connect } from 'react-redux'
 import Grid from '../components/Grid'
 import { turnSnake } from '../actions'
 
+// const mapStateToProps = state => ({
+//     apple: state.apple,
+//     snake: state.snake
+// })
+
 const mapStateToProps = state => ({
     apple: state.apple,
     snake: state.snake
