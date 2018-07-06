@@ -1,9 +1,48 @@
-const initialState = {
+import '../../types/direction'
 
-}
+const initialState = [
+    {
+        distance: 0,
+        direction: Direction.left
+    }
+]
 
-const tail = (state = initialState, action) => {
+const tail = (state = [], action) => {
     switch (action.type) {
-        
+        case 'MOVE_SNAKE':
+            return [
+                {
+                    distance: state[0].distance + (state.length > 1)?1:0,
+                    direction: state[0].direction
+                }
+                ,
+                ...state.slice(1, state.length - 1),
+                ...(
+                    state.length > 1
+                    ?
+                        [{
+                            distance: state[state.length - 1].distance - 1,
+                            direction: state[state.length - 1].direction
+                        }]
+                    :
+                        []
+                ),
+            ]
+        case 'GROW_SNAKE':
+            return [
+                ...state.slice(0, state.length - 1),
+                ...(
+                    state.length > 0
+                    ?
+                        [{
+                            distance: state[state.length - 1].distance - 1,
+                            direction: state[state.length - 1].direction
+                        }]
+                    :
+                        []
+                ),
+            ]
+        default:
+            return state
     }
 }

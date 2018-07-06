@@ -7,9 +7,9 @@ export const moveSnake = () => ({
     type: 'MOVE_SNAKE'
 })
 
-export const killSnake = () => ({
-    type: 'KILL_SNAKE'
-})
+// export const killSnake = () => ({
+//     type: 'KILL_SNAKE'
+// })
 
 export const moveApple = (x, y) => ({
     type: 'MOVE_APPLE',

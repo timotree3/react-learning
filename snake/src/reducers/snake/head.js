@@ -13,7 +13,7 @@ const head = (state = initialState, action) => {
                 ...state,
                 facing: action.direction
             }
-        case 'STEP_SNAKE':
+        case 'MOVE_SNAKE':
             const {x, y} = state.facing.toOffset();
             return {
                 ...state,
