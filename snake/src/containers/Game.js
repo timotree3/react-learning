@@ -1,6 +1,6 @@
 import { connect } from 'react-redux'
 import Grid from '../components/Grid'
-import { turnSnake , moveSnake, gainPoints, moveApple, growSnake } from '../actions'
+import { turnSnake , moveSnake, gainPoints, moveApple, growSnake, killSnake } from '../actions'
 
 const mapStateToProps = state => ({
     apple: state.apple,
@@ -16,6 +16,8 @@ const mapDispatchToProps = dispatch => ({
         dispatch(gainPoints(10))
         dispatch(moveApple(Math.floor(Math.random() * 30), Math.floor(Math.random() * 30)))
         dispatch(growSnake())
+    }, onSnakeDie: () => {
+        dispatch(killSnake())
     }
 })
 

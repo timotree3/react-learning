@@ -1,6 +1,7 @@
 import Direction from '../types/direction'
 
 const initialState = {
+    alive: true,
     x: 3,
     y: 3,
     moving: Direction.right,
@@ -17,7 +18,13 @@ const snake = (state = initialState, action) => {
         case 'TURN_SNAKE':
             return {
                 ...state,
-                moving: action.direction,
+                moving: (
+                    Direction.equals(action.direction, state.extensions[0])
+                    ?
+                    state.moving
+                    :
+                    action.direction
+                ),
             }
         case 'MOVE_SNAKE':
             const {x, y} = state.moving.toOffset();
@@ -32,13 +39,17 @@ const snake = (state = initialState, action) => {
                 ],
             }
         case 'GROW_SNAKE':
-            console.log("GROWING SNAKE", state.growing);
             return {
                 ...state,
                 extensions: [
                     ...state.extensions,
                     state.growing,
                 ],
+            }
+        case 'KILL_SNAKE':
+            return {
+                ...state,
+                alive: false,
             }
         default:
             return state

@@ -67,6 +67,10 @@ class Direction {
     static get down() {
         return new Direction(2)
     }
+
+    static equals(a, b) {
+        return a.value === b.value
+    }
 }
 
 export default Direction

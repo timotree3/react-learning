@@ -5,7 +5,7 @@ const Eyes = ({head}) => (
     <g transform={`rotate(${Direction.up.rotateTo(head.facing)} ${head.x} ${head.y})`}>
         <circle cx = {head.x - .25} cy = {head.y - .25} r = {.25} fill = "white" />
         {
-            true
+            head.alive
             ?
             <circle cx = {head.x - .25} cy = {head.y - .25} r = {.0675} fill = "black" />
             :
@@ -16,7 +16,7 @@ const Eyes = ({head}) => (
         }
         <circle cx = {head.x + .25} cy = {head.y - .25} r = {.25} fill = "white" />
         {
-            true
+            head.alive
             ?
             <circle cx = {head.x + .25} cy = {head.y - .25} r = {.0675} fill = "black" />
             :
