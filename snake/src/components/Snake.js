@@ -1,37 +1,31 @@
 import React from 'react'
 import Eyes from './Eyes'
 
-const getNodes = (head, stretches) => (
-    stretches.reduce(
-        (state, stretch) => {
-            let location = {...state.location}
-            let nodes = [...state.nodes]
-            for (let steps = 0; steps < stretch.distance; steps++) {
-                let offset = stretch.direction.toOffset()
-                location.x += offset.x
-                location.y += offset.y
-                nodes.push({...location})
-            }
-            return {
-                nodes,
-                location
-            }
-        },
-        {location: head, nodes: []}
-    ).nodes
-)
+const getNodes = ({x, y, extensions}) => {
+    console.log("extensions", extensions);
+    let nodes = [{x, y}];
+    let currentX = x;
+    let currentY = y;
+    for (let direction of extensions) {
+        let offset = direction.toOffset();
+        currentX += offset.x;
+        currentY += offset.y;
+        nodes.push({x: currentX, y: currentY});
+    }
+    return nodes;
+}
 
-const Snake = ({head, tail, node_size}) => (
+const Snake = ({snake, node_size}) => (
     <g>
         {[
-            {x: head.x, y: head.y},
-            ...getNodes(head, tail)
+            {x: snake.x, y: snake.y},
+            ...getNodes(snake)
         ].map(
             (location, i) => (
                 <circle key = {i} cx = {location.x} cy = {location.y} r = {.75} fill = "darkgreen" />
             )
         )}
-        <Eyes head = {head} />
+        <Eyes head = {{x: snake.x, y: snake.y, facing: snake.moving}} />
     </g>
 )
 

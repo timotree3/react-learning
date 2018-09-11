@@ -23,10 +23,10 @@ class Grid extends Component {
 
     componentDidUpdate({apple: prevApple, snake: prevSnake}) {
         const {apple, snake, onSnakeEat} = this.props
-        if (snake.head.x === apple.x && snake.head.y === apple.y) {
+        if (snake.x === apple.x && snake.y === apple.y) {
             onSnakeEat()
         }
-        // if (snake.head.x )
+        // if (snake.x )
     }
 
     render() {
@@ -34,7 +34,7 @@ class Grid extends Component {
         return <svg viewBox = {[0, 0, GRID_SIZE, GRID_SIZE]} style = {{width: CELL_SIZE*GRID_SIZE, background: "lightgray"}}>
             <g transform="translate(0.5 0.5)">
                 <Apple x = {apple.x} y = {apple.y} />
-                <Snake head = {snake.head} tail = {snake.tail} />
+                <Snake snake = {snake} />
             </g>
         </svg>
     }
