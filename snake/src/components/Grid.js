@@ -41,8 +41,8 @@ class Grid extends Component {
         const {apple, snake} = this.props
         return <svg viewBox = {[0, 0, GRID_SIZE, GRID_SIZE]} style = {{width: CELL_SIZE*GRID_SIZE, background: "lightgray"}}>
             <g transform="translate(0.5 0.5)">
-                <Apple x = {apple.x} y = {apple.y} />
                 <Snake snake = {snake} />
+                <Apple x = {apple.x} y = {apple.y} />
             </g>
         </svg>
     }
