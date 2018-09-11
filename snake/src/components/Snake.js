@@ -1,4 +1,5 @@
 import React from 'react'
+import Eyes from './Eyes'
 
 const getNodes = (head, stretches) => (
     stretches.reduce(
@@ -26,10 +27,11 @@ const Snake = ({head, tail, node_size}) => (
             {x: head.x, y: head.y},
             ...getNodes(head, tail)
         ].map(
-            location => (
-                <circle cx = {location.x * node_size * 1.5} cy = {location.y * node_size * 1.5} r = {node_size} fill = "lime" />
+            (location, i) => (
+                <circle key = {i} cx = {location.x} cy = {location.y} r = {.75} fill = "darkgreen" />
             )
         )}
+        <Eyes head = {head} />
     </g>
 )
 

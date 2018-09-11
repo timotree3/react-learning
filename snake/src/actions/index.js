@@ -11,6 +11,10 @@ export const moveSnake = () => ({
 //     type: 'KILL_SNAKE'
 // })
 
+export const growSnake = () => ({
+    type: 'GROW_SNAKE'
+})
+
 export const moveApple = (x, y) => ({
     type: 'MOVE_APPLE',
     x,
