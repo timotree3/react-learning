@@ -1,0 +1,54 @@
+Mawile-Mega @ Mawilite  
+Ability: Huge Power  
+EVs: 4 HP / 252 Atk / 252 Def  
+Relaxed Nature  
+- Ice Punch  
+- Play Rough  
+- Grass Knot  
+- Foul Play  
+
+Heatran @ Choice Specs  
+Ability: Flash Fire  
+EVs: 252 HP / 252 SpA / 4 SpD  
+Quiet Nature  
+IVs: 0 Atk  
+- Flash Cannon  
+- Flamethrower  
+- Dark Pulse  
+- Eruption  
+
+Greninja-Ash (M) @ Choice Specs  
+Ability: Battle Bond  
+- Ice Beam  
+- Surf  
+- Dark Pulse  
+- Extrasensory  
+
+Manectric-Mega @ Manectite  
+Ability: Intimidate  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Thunderbolt  
+- Flamethrower  
+- Signal Beam  
+- Toxic  
+
+Gallade-Mega (M) @ Galladite  
+Ability: Inner Focus  
+EVs: 252 Atk / 4 SpA / 252 Spe  
+Hasty Nature  
+- Close Combat  
+- Psycho Cut  
+- Leaf Blade  
+- Thunderbolt  
+
+Aerodactyl-Mega @ Aerodactylite  
+Ability: Tough Claws  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Jolly Nature  
+- Crunch  
+- Dragon Claw  
+- Earthquake  
+- Iron Head  
+
